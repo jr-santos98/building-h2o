@@ -60,6 +60,7 @@ void* f_hidrogenio(void* v) {
   sem_wait(&mutex);
   // Incrementando numero de hidrogenio
   hidrogenio = hidrogenio + 1;
+  sleep(1);
   if (hidrogenio >= 2 && oxigenio >= 1) {
     printf("Liberando hidrogenios e oxigenios\n");
     sem_post(&fila_hidro);
