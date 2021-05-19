@@ -30,7 +30,13 @@ O visualizador global foi implementado em: [*vg-building-h2o.c*](vg-building-h2o
 Para utilizar o visualizador global, basta executar os seguintes passos:
 
 `make`
+
 `./vg-building-h2o`
+
+O makefile também é configurado para que seja possível executar o código original,
+com o comando `make origen`, e também compila o código inicial de desenho com o
+comando `make draw`. Além disso, para remover todos os executáveis, basta
+utilizar o comando: `make clean`.
 
 ### Criação do Visualizador Global
 
