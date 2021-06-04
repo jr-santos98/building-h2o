@@ -13,14 +13,14 @@
 #define N_HIDRO 10
 
 // Semaforos definidos como globais, mais duas variáveis globais como volateis
-sem_t mutex;
-sem_t barreira;
-sem_t fila_oxi;
-sem_t fila_hidro;
+sem_t mutex, fila_mutex_oxi, fila_mutex_hidro;
+sem_t barreira, fila_oxi, fila_hidro;
 volatile int oxigenio = 0, hidrogenio = 0;
 
 void* f_oxigenio(void *v) {
   int volue;
+  sleep(random()%3);
+  sem_wait(&fila_mutex_oxi);
   printf("Oxigenio esperando a vez\n");
   sem_wait(&mutex);
   // Incrementando numero de oxigenios
@@ -46,6 +46,9 @@ void* f_oxigenio(void *v) {
     sem_post(&barreira);
     sem_post(&barreira);
     sem_post(&barreira);
+    sem_post(&fila_mutex_oxi);
+    sem_post(&fila_mutex_hidro);
+    sem_post(&fila_mutex_hidro);
   }
   sem_post(&mutex);
   printf("Oxi - Formou molecula\n");
@@ -55,7 +58,8 @@ void* f_oxigenio(void *v) {
 
 void* f_hidrogenio(void* v) {
   int volue;
-  sleep(random()%2);
+  sleep(random()%3);
+  sem_wait(&fila_mutex_hidro);
   printf("Hidrogenio esperando a vez\n");
   sem_wait(&mutex);
   // Incrementando numero de hidrogenio
@@ -82,6 +86,9 @@ void* f_hidrogenio(void* v) {
     sem_post(&barreira);
     sem_post(&barreira);
     sem_post(&barreira);
+    sem_post(&fila_mutex_oxi);
+    sem_post(&fila_mutex_hidro);
+    sem_post(&fila_mutex_hidro);
   }
   printf("Hidro - Formou molecula\n");
 
@@ -97,7 +104,8 @@ int main() {
   sem_init(&barreira, 0, 3);
   sem_init(&fila_oxi, 0, 0);
   sem_init(&fila_hidro, 0, 0);
-
+  sem_init(&fila_mutex_oxi, 0, 1);
+  sem_init(&fila_mutex_hidro, 0, 2);
   // Criando threads
   for (i = 0; i < N_OXI; i++) pthread_create(&thr_oxigenio[i], NULL, f_oxigenio, NULL);
   for (i = 0; i < N_HIDRO; i++) pthread_create(&thr_hidrogenio[i], NULL, f_hidrogenio, NULL);
