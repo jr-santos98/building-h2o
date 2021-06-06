@@ -1,6 +1,7 @@
 /*
 * Descrição: Essa é uma aplicação multi threds que une moleculas de h2o, tendo threds
 * com a molecula de oxigenio e hidrogenio.
+* Metodo: É utilizado Semaforos para realizar as operações
 */
 #include <pthread.h>
 #include <semaphore.h>

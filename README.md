@@ -42,7 +42,10 @@ A fila do mutex só é liberada, quando o ultimo componente da molecula h2o, pas
 A necessidade de uma terceira implementação surgiu, com a ideia de criar o mesmo algoritmo
 utilziando outra estretégia para realizar o controle das informações sensíveis entre as threads.
 A diferença dessa implementação será com a substituição dos Semaforos por mutex e lock.
-O usuário não deve notar diferença na execução entre as abordagens implementadas.
+Houve uma diferença significativa da velocidade de processamento entre os dois modelos,
+e o tamanho do código. Sendo a terceira implementação, a que possui o código
+menor e mais rápido. Além disso, o modelo de visualização, também pode ser
+implementado de uma forma melhor.
 
 > Ao utilizar o comando `make`, será realizado a geração de todos os executáveis disponiveis.
 Para executar apenas os de uma das implementações utilizadas, pode se utilizar as informações
@@ -51,7 +54,7 @@ contidas a baixo.
 ## Visualizador Global da 2ª implementação
 
 O visualizador global foi implementado em: [*vg-building-h2o.c*](vg-building-h2o.c).
-Ele utiliza Semaforos para fazer o controle das várias públicas entre as threads.
+Ele utiliza Semaforos para fazer o controle das variaveis públicas entre as threads.
 
 Para utilizar o visualizador global, basta executar os seguintes passos:
 
@@ -66,8 +69,8 @@ utilizar o comando: `make clean`.
 
 ## Visualizador Global da 3ª implementação
 
-O visualizador global foi implementado em: [*vg-building-h2o.c*](vg-building-h2o.c).
-Ele utiliza Mutex e Lock para fazer o controle das várias públicas entre as threads.
+O visualizador global foi implementado em: [*2vg-lock-building-h2o.c*](2vg-lock-building-h2o.c).
+Ele utiliza Lock e váriaveis de condição para fazer o controle das variaveis públicas entre as threads.
 
 Para utilizar o visualizador global, basta executar os seguintes passos:
 

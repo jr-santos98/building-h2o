@@ -1,8 +1,8 @@
 CC = gcc
 CFLAGS = -g -pthread
-PROGRAMS = building-h2o vg-building-h2o new-codes
+PROGRAMS = building-h2o vg-building-h2o lock-building-h2o 2vg-lock-building-h2o
 CODE2 = building-h2o vg-building-h2o
-CODE3 = new-codes
+CODE3 = lock-building-h2o 2vg-lock-building-h2o
 ORIGEN = building-h2o-origen
 DFLAGS = -g
 DRAW = draw-h2o

@@ -3,10 +3,9 @@
 * aplicacao multi-threds.
 * Descrição: Essa é uma aplicação multi threds que une moleculas de h2o, tendo threds
 * com a molecula de oxigenio e hidrogenio.
-* Metodo: É utilizado Semaforos para realizar as operações
+* Metodo: É utilizado Lock e Váriaveis de condição para realizar as operações
 */
 #include <pthread.h>
-#include <semaphore.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -15,11 +14,18 @@
 #define N_OXI 6
 #define N_HIDRO 12
 
-// Semaforos definidos como globais, mais duas variáveis globais como volateis
-sem_t mutex, fila_mutex_oxi, fila_mutex_hidro;
-sem_t barreira, fila_oxi, fila_hidro;
-sem_t draw;
+//sem_t fila_oxi, fila_hidro;
 volatile int oxigenio = 0, hidrogenio = 0;
+volatile int fila_oxigenio = 0, fila_hidrogenio = 0;
+
+// Utilizando Locks e variáveis de condição
+// sem verificação de erros
+pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t draw = PTHREAD_MUTEX_INITIALIZER;
+pthread_cond_t fila_oxi = PTHREAD_COND_INITIALIZER;
+pthread_cond_t fila_hidro = PTHREAD_COND_INITIALIZER;
+pthread_cond_t barreira_oxi = PTHREAD_COND_INITIALIZER;
+pthread_cond_t barreira_hidro = PTHREAD_COND_INITIALIZER;
 
 // Desenha a fila de Oxigenio
 void draw_oxygen(int altura, int qtde, int reposicionar) {
@@ -83,105 +89,83 @@ void draw_h2o() {
 void atualiza_vg(int status) {
   int tamanho = 5;
   system("clear");
+  printf("Fila espera de Oxigenio\n");
+  draw_oxygen(tamanho-2, fila_oxigenio, 0);
+  printf("\n");
+  printf("Fila espera de Hidrogenio\n");
+  draw_hidro(tamanho-2, fila_hidrogenio);
+  printf("\n");
   printf("Fila de Oxigenio\n");
   draw_oxygen(tamanho, oxigenio, 0);
   printf("\n\n");
   printf("Fila de Hidrogenio\n");
   draw_hidro(tamanho, hidrogenio);
   if (status == 1) {
-    printf("\n\n");
+    //printf("\n\n");
     printf("****************\n");
     printf("** Formou H2O **\n");
     printf("****************\n");
     draw_h2o();
   }
-  sem_post(&draw);
+  pthread_mutex_unlock(&draw);
 }
 
 void* f_oxigenio(void *v) {
-  int volue;
   sleep(random()%3);
-  sem_wait(&fila_mutex_oxi);
-  sem_wait(&mutex);
-  // Incrementando numero de oxigenios
-  oxigenio = oxigenio + 1;
-  sem_wait(&draw);
+  pthread_mutex_lock(&lock);
+  fila_oxigenio++;
+  while (oxigenio != 0) {
+    pthread_mutex_lock(&draw);
+    atualiza_vg(0);
+    sleep(1);
+    printf(".\n");
+    pthread_cond_wait(&fila_oxi, &lock);
+  }
+  fila_oxigenio--;
+  oxigenio++;
+  pthread_mutex_lock(&draw);
   atualiza_vg(0);
   sleep(1);
-  if (hidrogenio >= 2) {
-    sem_post(&fila_hidro);
-    sem_post(&fila_hidro);
-    // Ao moleculas são retiradas do contador de cada fila
-    hidrogenio = hidrogenio - 2;
-    sem_post(&fila_oxi);
-    oxigenio = oxigenio - 1;
-    sem_wait(&draw);
-    atualiza_vg(0);
-  } else sem_post(&mutex);
-
-  // Aguardando fila de oxigenio
-  sem_wait(&fila_oxi);
-
-  // Desenha molecula da agua (vinculo das moleculas)
-  sem_wait(&draw);
+  while (hidrogenio <= 1) {
+    pthread_cond_wait(&barreira_oxi, &lock);
+  }
+  hidrogenio = 0;
+  oxigenio = 0;
+  // Formar molecula
+  // Formou H2O
+  pthread_mutex_lock(&draw);
   atualiza_vg(1);
   sleep(1);
-
-  // Oxi - Esperando passar pela barreira
-  sem_wait(&barreira);
-  // Prepara barreira para formar uma nova molecula
-  sem_getvalue(&barreira, &volue);
-  if (volue == 0) {
-    sem_post(&barreira);
-    sem_post(&barreira);
-    sem_post(&barreira);
-    sem_post(&fila_mutex_oxi);
-    sem_post(&fila_mutex_hidro);
-    sem_post(&fila_mutex_hidro);
-  }
-  sem_post(&mutex);
-  // Oxi - Formou molecula
+  pthread_cond_signal(&fila_oxi);
+  pthread_cond_broadcast(&fila_hidro);
+  pthread_mutex_unlock(&lock);
 
   return NULL;
 }
 
 void* f_hidrogenio(void* v) {
-  int volue;
   sleep(random()%3);
-  sem_wait(&fila_mutex_hidro);
-  sem_wait(&mutex);
-  // Incrementando numero de hidrogenio
-  hidrogenio = hidrogenio + 1;
-  sem_wait(&draw);
+  pthread_mutex_lock(&lock);
+  fila_hidrogenio++;
+  while (hidrogenio > 1) {
+    pthread_mutex_lock(&draw);
+    atualiza_vg(0);
+    sleep(1);
+    printf("...\n");
+    pthread_cond_wait(&fila_hidro, &lock);
+  }
+  fila_hidrogenio--;
+  hidrogenio++;
+  pthread_mutex_lock(&draw);
   atualiza_vg(0);
   sleep(1);
-  if (hidrogenio >= 2 && oxigenio >= 1) {
-    sem_post(&fila_hidro);
-    sem_post(&fila_hidro);
-    // Ao moleculas são retiradas do contador de cada fila
-    hidrogenio = hidrogenio - 2;
-    sem_post(&fila_oxi);
-    oxigenio = oxigenio - 1;
-    sem_wait(&draw);
-    atualiza_vg(0);
-  } else sem_post(&mutex);
-
-  // Aguardando fila do hidrogenio
-  sem_wait(&fila_hidro);
-  // Cria vinculo entre as moleculas
-  // Esperando passar pela barreira
-  sem_wait(&barreira);
-  // Prepara barreira para formar uma nova molecula
-  sem_getvalue(&barreira, &volue);
-  if ( volue == 0) {
-    sem_post(&barreira);
-    sem_post(&barreira);
-    sem_post(&barreira);
-    sem_post(&fila_mutex_oxi);
-    sem_post(&fila_mutex_hidro);
-    sem_post(&fila_mutex_hidro);
+  while (hidrogenio == 1) {
+    pthread_cond_wait(&barreira_hidro, &lock);
+    pthread_cond_signal(&barreira_oxi);
   }
-  // Hidro - Formou molecula
+  // Formar molecula
+  pthread_cond_signal(&barreira_hidro);
+  pthread_mutex_unlock(&lock);
 
   return NULL;
 }
@@ -190,15 +174,6 @@ int main() {
   pthread_t thr_oxigenio[N_OXI], thr_hidrogenio[N_HIDRO];
   int i;
   system("clear");
-
-  // Iniciando Semaforos
-  sem_init(&mutex, 0, 1);
-  sem_init(&barreira, 0, 3);
-  sem_init(&fila_oxi, 0, 0);
-  sem_init(&fila_hidro, 0, 0);
-  sem_init(&fila_mutex_oxi, 0, 1);
-  sem_init(&fila_mutex_hidro, 0, 2);
-  sem_init(&draw, 0, 1);
 
   // Criando threads
   for (i = 0; i < N_OXI; i++) pthread_create(&thr_oxigenio[i], NULL, f_oxigenio, NULL);
